@@ -1,7 +1,9 @@
 package Hot100;
 
-import java.util.*;
 
+import com.sun.source.tree.Tree;
+
+import java.util.*;
 
 public class Solution {
 //辅助哈希表求两数之和，一定要先查后加，否则会自我匹配
@@ -684,7 +686,414 @@ public class Solution {
         }
         return pHead.next;
     }
+//反转链表2-片段反转  需要哨兵+pre /cur/next三个指针保证当前指向前面的，最后连接原链表和反转后的尾巴和头部。返回哨兵下一个
+    public ListNode reverseBetween(ListNode head, int left, int right) {
+        ListNode dummy = new  ListNode(0) ;
+        dummy.next = head;
+        ListNode p = dummy;
+        int count = 0;
+        while (count < left-1) {
+            p = p.next;
+            count++;
+        }//p在left前一个，从这里开始反转
+        ListNode pre = null;
+        ListNode cur = p.next;
+        while (count < right) {//遍历最后一次结束cur是反转的下一个，pre时反转的最后一个
+            ListNode next = cur.next;
+            cur.next = pre;
+            pre = cur;
+            cur = next;
+            count++;
+        }
+        p.next.next = cur;
+        p.next = pre;
+        return dummy.next;
+    }
+//K个一组反转链表-多次调用reverseBetween
+    public ListNode reverseKGroup(ListNode head, int k) {
+        int length = 0;
+        ListNode p =  head;
+        while (p!= null) {
+            length++;
+            p = p.next;
+        }
+        ListNode dummy = new  ListNode(0) ;
+        dummy.next = head;
+        int curLocation = 1;
+        while (length-curLocation+1 >= k) {
+            dummy.next = reverseBetween(dummy.next,curLocation,curLocation+k-1);
+            curLocation +=k;
+        }
+        return dummy.next;
+    }
+//复制带随机指针的链表-哈希表存储映射关系
+    public Node copyRandomList(Node head) {
+        Map<Node, Integer> oldNodeMap = new HashMap<>();
+        Map<Integer, Node> newNodeMap = new HashMap<>();
+        Node newHead = new Node(0);
+        Node p = head;
+        Node cur = newHead;
+        int index = 0;
+        while (p != null) {
+            Node nxt = new Node(p.val);
+            oldNodeMap.put(p,index);
+            newNodeMap.put(index++, nxt);
+            cur.next = nxt;
+            cur = cur.next;
+            p = p.next;
+        }
+        p = head;
+        cur = newHead.next;
+        while (p != null) {
+          cur.random =  newNodeMap.get(oldNodeMap.get(p.random));
+          p = p.next;
+          cur = cur.next;
+        }
+        return newHead.next;
+    }
 
+//链表元素排序-递归变成合并两个有序链表 - mergeTwoLists - middleNode
+    public ListNode sortList(ListNode head) {
+        if (head == null || head.next == null) {
+            return head;
+        }
+        ListNode second = middleNode(head), first = head;
+        ListNode nxt = second.next;
+        second.next = null;
+        ListNode second_plus =  sortList(nxt);
+        ListNode first_plus =  sortList(first);
+        return mergeTwoLists(second_plus,first_plus);
+    }
+
+
+//    获取链表的中间节点
+    public ListNode middleNode(ListNode head) {
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+        ListNode slow = dummy;
+        ListNode fast = dummy;
+        while (fast != null && fast.next!= null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        return slow;
+    }
+//合并K个有序链表-两两合并
+    public ListNode mergeKLists01(ListNode[] lists) {
+        if (lists == null || lists.length == 0) {
+            return null;
+        }
+        ListNode result = lists[0];
+        for (int i = 1; i < lists.length; i++) {
+          result =  mergeTwoLists(result,lists[i]);
+        }
+        return result;
+    }
+//优先队列
+    public ListNode mergeKLists(ListNode[] lists) {
+        PriorityQueue<ListNode> pq = new PriorityQueue<>((a,b) -> a.val - b.val);
+        for (ListNode node : lists) {
+            if (node != null) {
+                pq.offer(node);
+            }
+        }
+        ListNode dummy = new ListNode(0);
+        ListNode cur = dummy;
+        while (!pq.isEmpty()) {
+            ListNode node = pq.poll();
+            cur.next = node;
+            cur = cur.next;
+            if (node.next != null) {
+                pq.offer(node.next);
+            }
+        }
+        return dummy.next;
+    }
+
+//从现在开始变成了树部分，链表部分全部都写完，最后一道LRU单独写在一个文件当中。
+
+//中序遍历
+    public List<Integer> inorderTraversal(TreeNode root) {
+        List<Integer> result = new ArrayList<>();
+        dfs(root, result);
+        return result;
+    }
+
+    public void dfs(TreeNode root,List<Integer> result) {
+        if (root == null) {
+            return;
+        }
+        dfs(root.left, result);
+        result.add(root.val);
+        dfs(root.right, result);
+    }
+    //最大高度
+    public int maxDepth(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int left =  maxDepth(root.left);
+        int right = maxDepth(root.right);
+        return Math.max(left,right) + 1;
+    }
+// 翻转二叉树
+    public TreeNode invertTree(TreeNode root) {
+        if (root == null) {
+            return null;
+        }
+        TreeNode temp = invertTree(root.left);
+        root.left = invertTree(root.right);
+        root.right = temp;
+        return root;
+    }
+//检查轴对称
+    public boolean isSymmetric(TreeNode root) {
+        if (root == null) {
+            return true;
+        }
+        if (root.left == null && root.right == null) {
+            return true;
+        }
+        if (root.left != null && root.right != null) {
+            return isMirror(root.left, root.right);
+        }
+        return false;
+    }
+    public boolean isMirror(TreeNode root1, TreeNode root2) {
+        if (root1 == null && root2 == null) return true;
+        if (root1 == null || root2 == null) return false;
+        return root1.val == root2.val
+                && isMirror(root1.left, root2.right)
+                && isMirror(root1.right, root2.left);
+    }
+//最长路径长度
+    int max = 0;
+    public int diameterOfBinaryTree(TreeNode root) {
+      linkLength(root);
+      return max;
+    }
+//   求root的最长链长度
+    public int linkLength(TreeNode root) {
+       if (root == null) return -1;//这样如果只有一个根节点，恰好算出来链长是0，对于叶子来说，链长就是 -1+1=0
+       int left =  linkLength(root.left)+1;// 左子树最大链长+1（已经考虑了如果左子树为空的情况)
+       int right = linkLength(root.right)+1;
+       max =  Math.max(max,left+right);//更新max，保证max拿到全局最长的直径
+       return Math.max(left,right);//返回当前子树的最大链长
+    }
+//层次遍历
+
+    public List<List<Integer>> levelOrder(TreeNode root) {
+        if (root == null) {
+            return new ArrayList<>(); // 替代 List.of()
+        }
+        List<List<Integer>> ans = new ArrayList<>();//结果数组
+        List<TreeNode> cur = new ArrayList<>(); //当前层节点数组
+        cur.add(root);
+
+        while (!cur.isEmpty()) {
+            List<TreeNode> nxt = new ArrayList<>();
+            List<Integer> vals = new ArrayList<>(cur.size());
+            for (TreeNode node : cur) {
+                vals.add(node.val);
+                if (node.left != null)  nxt.add(node.left);
+                if (node.right != null) nxt.add(node.right);
+            }
+            cur = nxt;
+            ans.add(vals);
+        }
+        return ans;
+    }
+
+//有序数组构建高度平衡二叉树
+    public TreeNode sortedArrayToBST(int[] nums) {
+        return buildTree(nums, 0, nums.length - 1);
+    }
+//辅助函数，传入数组以及当前处理的左右边界
+    public TreeNode buildTree(int[] nums, int left, int right) {
+        if (left > right) {
+            return null;
+        }
+        int mid = left + (right - left) / 2;
+        TreeNode node = new TreeNode(nums[mid]);
+        node.left = buildTree(nums, left, mid - 1);
+        node.right = buildTree(nums, mid + 1, right);
+        return node;
+    }
+
+    public boolean isValidBST(TreeNode root) {
+        return isValidBST2(root, Long.MIN_VALUE, Long.MAX_VALUE);
+    }
+//辅助函数，传入当前节点以及允许的最小值和最大值
+    public  boolean isValidBST2(TreeNode root,long min, long max) {
+        if (root == null) {
+            return true;
+        }
+        if (root.val <= min || root.val >= max) {
+            return false;
+        }
+        return isValidBST2(root.left, min, root.val) && isValidBST2(root.right, root.val, max);
+
+    }
+
+    int k;int ans;
+    public int kthSmallest(TreeNode root, int k) {
+        dfskth(root);
+        return ans;
+    }
+
+    public void dfskth(TreeNode root) {
+        if (root == null||k==0) {
+            return;
+        }
+        dfskth(root.left);
+        k--;
+        if (k==0){
+            ans = root.val;
+            return;
+        }
+        dfskth(root.right);
+    }
+
+//二叉树的右视图
+    //层次遍历，每层最后一个节点
+    public List<Integer> rightSideView(TreeNode root) {
+        List<Integer> ans = new ArrayList<>();
+        if (root == null) return ans;//这里一定要注意排除根节点为空的情况，否则下面cur.getLast会报错
+        List<TreeNode> cur = new ArrayList<>();
+        List<TreeNode>nxt = new ArrayList<>();
+        cur.add(root);
+        while (!cur.isEmpty()) {
+            //每层遍历
+            //这层要做的事,添加最后一个不为空的节点
+            ans.add(cur.getLast().val);
+            for (TreeNode node : cur) {
+                if (node.left != null) {
+                    nxt.add(node.left);
+                }
+                if (node.right != null) {
+                    nxt.add(node.right);
+                }
+            }
+            cur = nxt;
+            nxt = new ArrayList<>();
+        }
+        return ans;
+    }
+    TreeNode head;
+    public void flatten(TreeNode root) {
+        if (root == null) return;
+        flatten(root.right);
+        flatten(root.left);
+        root.left = null;
+        root.right = head;
+        head = root;
+    }
+//中序+前序构建二叉树
+
+    public TreeNode buildTree( int[] preorder, int[] inorder) {
+        if (preorder.length==0 || inorder.length==0) {
+            return null;
+        }
+        TreeNode root = new TreeNode(preorder[0]);
+        int inRootIndex = 0;
+        for (int i = 0; i <= inorder.length; i++) {
+            if (inorder[i] == preorder[0]) {
+                inRootIndex = i;
+                break;
+            }
+        }
+        int [] leftPreOrder = Arrays.copyOfRange(preorder, 1, inRootIndex + 1);
+        int [] leftInOrder = Arrays.copyOfRange(inorder, 0, inRootIndex );
+        int [] rightPreOrder = Arrays.copyOfRange(preorder, inRootIndex + 1, preorder.length);
+        int [] rightInOrder = Arrays.copyOfRange(inorder, inRootIndex + 1, inorder.length);
+        root.left = buildTree(leftPreOrder, leftInOrder);
+        root.right = buildTree(rightPreOrder,rightInOrder);
+        return root;
+    }
+
+//    树的路径总和3
+    int totalCount = 0;
+    Map<Long,Integer> map = new HashMap<>();
+    public int pathSum(TreeNode root, int targetSum) {
+        map.put(0L,1);
+        dfsSum(root,targetSum,0L);
+        return totalCount;
+    }
+
+    public void dfsSum(TreeNode root, int targetSum,Long sum){
+        if (root == null) return ;
+        sum+=root.val;
+        if (map.containsKey(sum - targetSum)) {
+            totalCount += map.get(sum - targetSum);
+        }
+        map.put(sum,map.getOrDefault(sum,0)+1);
+        dfsSum(root.left,targetSum,sum);
+        dfsSum(root.right,targetSum,sum);
+        map.put(sum,map.get(sum)-1);
+    }
+//二叉树的最近公共祖先-方法一：路径法
+    public TreeNode lowestCommonAncestor01(TreeNode root, TreeNode p, TreeNode q) {
+        List <TreeNode> pathP = new LinkedList<>();
+        List <TreeNode> pathQ = new LinkedList<>();
+        dfsPath( root, p,pathP);
+        dfsPath( root, q,pathQ);
+        int length = Math.min(pathP.size(), pathQ.size());
+        for (int i = 0; i < length ; i++) {
+            if (pathP.get(i) != pathQ.get(i)) {
+                return pathP.get(i-1);
+            }
+        }
+        return pathP.get(length-1);
+    }
+
+    public void dfsPath(TreeNode root, TreeNode p,List<TreeNode> path){
+        if (root == null) return ;
+        path.add(root);
+        if (root == p) return ;
+        dfsPath(root.left,p,path);
+        dfsPath(root.right,p,path);
+        if (path.getLast() != p) {
+            path.removeLast();//回溯
+        }
+    }
+    //二叉树的最近公共祖先-方法二：递归法
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+       if (root == null||root == p||root==q) return root;
+       TreeNode left = lowestCommonAncestor(root.left,p,q);
+       TreeNode right = lowestCommonAncestor(root.right,p,q);
+       if (left == null) return right;
+       if (right == null) return left;
+       return root;
+    }
+//二叉树的最大路径和
+    Integer ansMaxSum = Integer.MIN_VALUE;
+    public int maxPathSum(TreeNode root) {
+        dfsMaxPathSum(root);
+        return ansMaxSum;
+    }
+    public int dfsMaxPathSum(TreeNode root) {
+        if (root == null) return 0;
+        int left =  dfsMaxPathSum(root.left);
+        int right = dfsMaxPathSum(root.right);
+        ansMaxSum = Math.max(left+right+root.val,ansMaxSum);
+        return Math.max(Math.max(left,right)+root.val,0);
+    }
+
+    public int searchInsert(int[] nums, int target) {
+        int left = 0;
+        int right = nums.length - 1;
+        while(left<=right){
+            int mid = left + (right-left) /2;
+            if (nums[mid] == target) {
+                return mid;
+            }else  if (nums[mid] < target) {
+                left = mid + 1;
+            }else  {
+                right = mid - 1;
+            }
+        }
+        return left;
+    }
 
 
 
@@ -708,4 +1117,9 @@ public class Solution {
 
 
     }
+
+
+
+
+
 }

@@ -1,8 +1,5 @@
 package Hot100;
 
-
-import com.sun.source.tree.Tree;
-
 import java.util.*;
 
 public class Solution {
@@ -356,10 +353,10 @@ public class Solution {
         List<int []> ans = new ArrayList<>();
         Arrays.sort(intervals,(a,b)->a[0]-b[0]);//正序排序左端点
         for (int i = 0; i < intervals.length; i++) {
-            if (!ans.isEmpty() && ans.getLast()[1]>=intervals[i][0]){
-                ans.getLast()[1]=Math.max(ans.getLast()[1],intervals[i][1]);
-            }else  {
-                ans.addLast(intervals[i]);
+            if (!ans.isEmpty() && ans.get(ans.size() - 1)[1]>=intervals[i][0]){
+                ans.get(ans.size() - 1)[1]=Math.max(ans.get(ans.size() - 1)[1],intervals[i][1]);
+            }else {
+                ans.add(intervals[i]);
             }
         }
         return ans.toArray(new int[ans.size()][]);
@@ -463,7 +460,7 @@ public class Solution {
             }
         }
     }
-    public boolean searchMatrix(int[][] matrix, int target) {
+    public boolean searchMatrix01(int[][] matrix, int target) {
        int i = 0;
        int j = matrix[0].length-1;
        while (i < matrix.length && j >= 0){
@@ -965,7 +962,7 @@ public class Solution {
         while (!cur.isEmpty()) {
             //每层遍历
             //这层要做的事,添加最后一个不为空的节点
-            ans.add(cur.getLast().val);
+            ans.add(cur.get(cur.size() - 1).val);
             for (TreeNode node : cur) {
                 if (node.left != null) {
                     nxt.add(node.left);
@@ -1052,8 +1049,8 @@ public class Solution {
         if (root == p) return ;
         dfsPath(root.left,p,path);
         dfsPath(root.right,p,path);
-        if (path.getLast() != p) {
-            path.removeLast();//回溯
+        if (path.get(path.size() - 1) != p) {
+            path.remove(path.size() - 1);//回溯
         }
     }
     //二叉树的最近公共祖先-方法二：递归法
@@ -1094,8 +1091,169 @@ public class Solution {
         }
         return left;
     }
+    public boolean searchMatrix(int[][] matrix, int target) {
+        int m = matrix.length;
+        int n = matrix[0].length;
+        int left = 0;
+        int right = m * n - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            int midValue = matrix[mid / n][mid % n];
+            if (midValue == target) {
+                return true;
+            } else if (midValue < target) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        return false;
+    }
+//    找出排序数组中的第一个和最后一个位置
+    public int[] searchRange(int[] nums, int target) {
+       int[] res = new int[]{-1,-1};
+        int first = findFirst(nums,target);
+        if (first==nums.length || nums[first]!=target) {//不存在target的情况
+            return res;//这里的first如果不存在target可能因为全小于target而指向length位置，也还可能指向某一个位置结束
+        }
+        res[0] = first;
+        int last = findFirst(nums,target+1)-1;
+        res[1] = last;
+        return res;
+    }
+// 找第一个大于target的数，但是返回的结果可能有两种，一种是nums中存在target，另一种是不存在target（所有的数都小于target，或者所有的数都大于target）
+    public int findFirst(int []nums,int target){
+        int left = -1;
+        int right = nums.length;
+        while(left+1<right){
+            int mid  = left + (right-left)/2;
+            if(nums[mid]>=target){
+                right = mid;
+            }else {
+                left = mid;
+            }
+        }
+        return right;
+    }
+//寻找旋转排序数组中的最小值
+    public int findMin(int[] nums) {
+        int left = -1;
+        int right = nums.length;
+        while (left +1< right) {
+            int mid  = left + (right-left)/2;
+            if (nums[mid] > nums[nums.length-1]) {
+                left = mid;
+            }else {
+                right = mid;
+            }
+        }
+        return nums[right];
+    }
+    public int findMinIndex(int[] nums) {
+        int left = -1;
+        int right = nums.length;
+        while (left +1< right) {
+            int mid  = left + (right-left)/2;
+            if (nums[mid] > nums[nums.length-1]) {
+                left = mid;
+            }else {
+                right = mid;
+            }
+        }
+        return right;
+    }
+    public int search(int[] nums, int target) {
+        int min = findMin(nums);
+        if(target > nums[nums.length-1]){
+            //target在第一段
+           int leftRes = lowerBound(nums,target,-1,min);
+            if (leftRes == min || nums[leftRes] != target) {
+                return -1;
+            }
+            return leftRes;
+        }else  {
+            int rightRes = lowerBound(nums,target,min-1,nums.length);
+            if (rightRes == nums.length || nums[rightRes] != target) {
+                return -1;
+            }
+            return rightRes;
+        }
+    }
+    //开区间写法
+    public int lowerBound(int []nums, int target,int left,int right) {
+        while (left+1 < right) {
+            int mid = left + (right - left) / 2;
+            if (nums[mid] >= target) {
+                right = mid;
+            } else {
+                left = mid;
+            }
+        }
+        return right;
+    }
+//寻找两个正序数组的中位数-hard，直接背吧
+    public double findMedianSortedArrays(int[] nums1, int[] nums2) {
+        if (nums1.length > nums2.length) {
+            int [] temp = nums1;
+            nums1 = nums2;
+            nums2 = temp;
+        }
+        int m = nums1.length;
+        int n = nums2.length;
+        int []a = new int[m+2];
+        int []b = new int[n+2];
+        a[0] = b[0] = Integer.MIN_VALUE;
+        a[m+1] = b[n+1] = Integer.MAX_VALUE;
+       System.arraycopy(nums1, 0, a, 1, m);
+       System.arraycopy(nums2, 0, b, 1, n);
+       int i = 0;
+       int j = (m+n+1)/2-i;
+       while(true){
+           if (a[i+1]>b[j] && a[i]<=b[j+1] ) {
+               //找到了
+               int max1 = Math.max(a[i], b[j]);
+               int min2 = Math.min(a[i + 1], b[j + 1]);
+               return (m + n) % 2 > 0 ? max1 : (max1 + min2) / 2.0;
+           }
+           i++;
+           j--;
+       }
+    }
 
 
+    public boolean isValid(String s) {
+        Map<Character,Character> pairs = new HashMap<>();
+        pairs.put(')','(');
+        pairs.put('}','{');
+        pairs.put(']','[');
+        Deque<Character> stack = new ArrayDeque<>();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c=='(' || c=='{' || c=='[') {
+                stack.push(c);
+            }else {
+                if (stack.isEmpty()) {
+                    return false;
+                }else {
+                    if(pairs.get(c)!=stack.peek()){
+                        return false;
+                    }else {
+                        stack.pop();
+                    }
+                }
+            }
+        }
+        return stack.isEmpty();
+    }
+//字符串解码-栈，遇到数字和左括号入栈，遇到右括号出栈直到遇到左括号，出栈的字符串乘以数字后再入栈
+    public String decodeString(String s) {
+        char [] oldStr = s.toCharArray();
+        Deque<String> stack = new ArrayDeque<>();
+        for(char c : oldStr){
+
+        }
+        return "";
+    }
 
 
 
@@ -1109,11 +1267,9 @@ public class Solution {
         Solution solution = new Solution();
 
         // 测试数据
-        int[] nums = {1,-1,0};
-        String s = "ADOBECODEBANC";
-        String p = "ABC";
-        // 调用并测试算法
-        solution.minWindow(s,p);
+        int[] nums = {4,5,6,7,0,1,2};
+
+        solution.search(nums,0);
 
 
     }

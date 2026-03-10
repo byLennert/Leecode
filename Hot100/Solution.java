@@ -1246,14 +1246,286 @@ public class Solution {
         return stack.isEmpty();
     }
 //字符串解码-栈，遇到数字和左括号入栈，遇到右括号出栈直到遇到左括号，出栈的字符串乘以数字后再入栈
-    public String decodeString(String s) {
-        char [] oldStr = s.toCharArray();
-        Deque<String> stack = new ArrayDeque<>();
-        for(char c : oldStr){
+    public String decodeString01(String s) {
+       if (s == null || s.isEmpty()) {
+           return "";
+       }
 
-        }
+       if (Character.isLetter(s.charAt(0))) {
+              return s.charAt(0) + decodeString01(s.substring(1));
+       }
+
+       //直接找[,[左边的都是数字
+       int start = s.indexOf('[');
+       int num = Integer.parseInt(s.substring(0, start));//左闭右开
+       int banlance = 1;
+       for (int i=start+1;i<s.length();i++){
+           if (s.charAt(i)=='['){
+               banlance++;
+           }else if (s.charAt(i)==']'){
+               banlance--;
+             if (banlance==0){
+                 String sub = decodeString01(s.substring(start+1,i));//递归解码右侧的字符串
+                 return new StringBuilder()
+                         .repeat(sub, num)
+                         .append(decodeString01(s.substring(i + 1)))
+                         .toString();
+             }
+           }
+       }//找到右侧括号
         return "";
     }
+
+    public String decodeString(String s) {
+       return decode(s.toCharArray());
+    }
+    private int decodeIndex = 0;
+    //这里一定要用字符串数组参数而不是string，因为递归之后要处理一个字符串的子串
+    public String decode(char[] s){
+        int k = 0;
+        StringBuilder res = new  StringBuilder();
+
+        while(decodeIndex<s.length){
+            char c = s[decodeIndex];
+            decodeIndex++;
+            if (Character.isLetter(c)){
+                res.append(c);
+            } else if (Character.isDigit(c)) {
+                k = k*10 + (c - '0');//数字可能有多位，所以每次都要乘以10加上当前位的数字
+            } else if (c=='['){
+                String sub = decode(s);//递归解码右侧的字符串
+                res.append(sub.repeat(k));
+                k = 0;//重置k，准备下一轮的数字,否则如果有连续的数字，比如3[a]2[bc]，当解码完3[a]后，k已经是3了，如果不重置k，那么解码2[bc]的时候就会变成32[bc]
+            }else {
+                break;
+            }
+        }
+        return res.toString();
+    }
+    //每日温度-单调栈，栈顶元素是当前还没有找到更高温度的索引，遇到更高温度时出栈并计算差值
+    public int[] dailyTemperatures(int[] temperatures) {
+        Deque<Integer> s = new ArrayDeque<>();
+        int []res = new int[temperatures.length];
+        for (int i = 0; i < temperatures.length; i++) {
+            while(!s.isEmpty() && temperatures[i]>temperatures[s.peek()]){
+                int j = (int) s.pop();
+                res[j] = i-j;
+            }
+            s.push(i);
+
+        }
+        return res;
+    }
+//最大矩形面积-单调栈，栈顶元素是当前还没有找到更小高度的索引，遇到更小高度时出栈并计算以出栈元素为高度的矩形面积
+    public int largestRectangleArea(int[] heights) {
+        //先找left数组
+        int []left = new int[heights.length];
+        Deque<Integer>s = new ArrayDeque<>();
+        for (int i = 0; i < heights.length; i++) {
+            while(!s.isEmpty() &&heights[s.peek()] >= heights[i] ){
+                //我们要找小于的值，所以当栈顶元素大于等于当前元素时出栈，直到找到小于当前元素的值或者栈空
+                s.pop();
+            }
+           left[i] = s.isEmpty()?-1:s.peek();
+            s.push(i);//无论如何都要把当前元素的索引入栈，因为它可能是后面元素的left边界
+            }
+
+        //再找right数组
+        int []right = new int[heights.length];
+        s.clear();
+        for (int i = heights.length-1; i >=0; i--) {
+            while(!s.isEmpty() &&heights[s.peek()] >= heights[i] ){
+                //我们要找小于的值，所以当栈顶元素大于等于当前元素时出栈，直到找到小于当前元素的值或者栈空
+                s.pop();
+            }
+            right[i] = s.isEmpty()?heights.length:s.peek();
+            s.push(i);//无论如何都要把当前元素的索引入栈，因为它可能是后面元素的left边界
+        }
+        //最后计算面积
+        int maxArea = 0;
+        for (int i = 0; i < heights.length; i++) {
+            int area = heights[i]* (right[i]-left[i]-1);//它们之间的元素都是大于等于当前元素的，宽度就是它们之间的距离减去1
+            maxArea = Math.max(maxArea, area);
+        }
+        return maxArea;
+    }
+
+
+//图论
+public int numIslands(char[][] grid) {
+    int m = grid.length;
+    int n = grid[0].length;
+    int count = 0;
+    int [][] path = new int[m][n];
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+          boolean res =  dfsIslands(grid,path,i,j);
+          if (res){
+              count++;
+          }
+        }
+    }
+    return count;
+}
+//
+public boolean dfsIslands(char[][] grid,int [][] path,int i,int j){
+    if (i<0 || i>=grid.length || j<0 || j>=grid[0].length || path[i][j] == 1 || grid[i][j] == '0') {
+        return false;
+    }
+    path[i][j] = 1;
+    dfsIslands(grid,path,i,j+1);
+    dfsIslands(grid,path,i+1,j);
+    dfsIslands(grid,path,i,j-1);
+    dfsIslands(grid,path,i-1,j);
+
+    return true;
+}
+
+private static final int[][] Direction= new int[][]{{0,1},{1,0},{0,-1},{-1,0}};
+public int orangesRotting(int[][] grid) {
+    //定义列表存储初始腐烂橘子的位置
+    List<int[]> rotten = new ArrayList<>();
+    int res = 0;
+    int freshCount = 0;
+    int m = grid.length;
+    int n = grid[0].length;
+    for (int i = 0; i < m; i++) {
+        for (int j = 0; j < n; j++) {
+            if (grid[i][j] == 1) {
+                freshCount++;
+            } else if (grid[i][j] == 2) {
+                rotten.add(new int[]{i, j});
+             }
+            }
+        }
+    //开始感染
+    while(freshCount > 0 && !rotten.isEmpty()){
+        List<int[]>temp = new ArrayList<>();
+        res++;
+        for(int[] p :rotten){
+           for (int[] d:Direction){
+               int x = p[0] + d[0];
+               int y = p[1] + d[1];
+               if(x>=0&&x<m&&y>=0&&y<n&&grid[x][y]==1){
+                   grid[x][y] = 2;
+                   freshCount--;
+                   temp.add(new int[]{x,y});
+               }
+           }
+        }
+        rotten = temp;
+    }
+        if (freshCount > 0) {
+            return -1;
+        }
+    return res;
+}
+
+public boolean canFinish(int numCourses, int[][] prerequisites) {
+//初始化邻接表
+    List<Integer>[] graph = new ArrayList[numCourses];
+    Arrays.setAll(graph,i->new ArrayList<>());
+    for (int i = 0; i < prerequisites.length; i++) {
+        graph[prerequisites[i][1]].add(prerequisites[i][0]);
+     }
+    int []color = new int[numCourses];
+
+    //开始判断有没有环
+    for (int i = 0; i < numCourses; i++) {
+        if (color[i] == 0) {//如果没有访问过，就开始访问，如果访问过了，就不需要访问了，包含了color[i]==2的情况
+            if (dfsCourse(graph,color,i)) {
+                return false;
+            }
+        }
+    }
+    return  true;
+}
+//如果返回true表示有环，这里注意一定要递归保持一致，如果是返回false表示有环，那么递归函数就要在有环的时候返回false，条件判断出问题
+public boolean dfsCourse(List<Integer>[] graph,int []color,int i){
+    color[i] = 1;
+    for (Integer j : graph[i]) {
+        //这里如果j正在访问，必有环；如果没有访问，就看访问结果；如果访问过了，实际上就不运行dfs函数，包含了j为2的判断
+        if (color[j]==1 || color[j]==0 && dfsCourse(graph,color,j)) {
+            return true;
+        }
+    }
+    color[i] = 2;
+    return false;
+}
+
+public List<List<Integer>> permute(int[] nums) {
+    List<List<Integer>>ans = new ArrayList<>();
+    boolean []used = new boolean[nums.length];
+    List<Integer> path = new ArrayList<>();
+    dfsPermute(ans,path,nums,used);
+    return ans;
+}
+public void dfsPermute(List<List<Integer>> res,List<Integer> path,int[]nums,boolean[] used){
+    //处理完成的情况
+    if (path.size()==nums.length){
+        res.add(new ArrayList<>(path));
+        return;
+    }
+    //处理当前层的逻辑
+    for (int k = 0;k<nums.length;k++){
+        if (!used[k]){
+            used[k] = true;
+            path.add(nums[k]);
+            //进入下一层
+            dfsPermute(res,path,nums,used);
+            //回退当前层的状态,只有做出选择才要回退
+            used[k] = false;
+            if (!path.isEmpty()){
+                path.removeLast();
+            }
+        }
+    }
+}
+
+public List<List<String>> solveNQueens(int n) {
+ List<List<String>> res = new ArrayList<>();
+ int[] queens = new int[n]; // 皇后放在 (r,queens[r])
+ boolean []col = new boolean[n]; // 列是否被占用
+ Map<Integer,Boolean> diag1 = new HashMap<>();
+ Map<Integer,Boolean> diag2 = new HashMap<>();
+ dfsQueens(res,0,diag1,diag2,queens,col);
+ return res;
+}
+
+public void dfsQueens(List<List<String>> res,int r,
+                      Map<Integer,Boolean> diag1,Map<Integer,Boolean> diag2,
+                      int []queens,boolean[] col){
+    int n = col.length;
+    if (r==n){//最后一行时候处理完成的情况
+        List<String> board = new ArrayList<>(n); // 一个棋盘
+        for (int i:queens){
+            char []row = new char[n];
+            Arrays.fill(row, '.');
+            row[i] = 'Q';
+            board.add(new String(row));
+        }
+        res.add(board);
+        return;
+    }
+    //处理当前层的逻辑
+    for (int c = 0;c<n;c++){
+    //判断当前列行不行
+         if (!col[c] && !diag1.getOrDefault(r+c,false) && !diag2.getOrDefault(r-c,false)){
+             queens[r]=c;//把皇后放在(r,c)位置
+             col[c] = true;
+             diag1.put(r+c,true);
+             diag2.put(r-c,true);
+            //进入下一层
+             dfsQueens(res,r+1,diag1,diag2,queens,col);
+            //回退当前层的状态
+            col[c] = false;
+            diag1.put(r+c,false);
+            diag2.put(r-c,false);
+         }
+    }
+}
+
+
 
 
 
